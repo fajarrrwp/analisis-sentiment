@@ -1,0 +1,11 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Werkzeug
+pandas
+scikit-learn
+matplotlib
+seaborn
+wordcloud
+nltk
+Sastrawi
