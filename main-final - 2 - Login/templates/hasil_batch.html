@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hasil Klasifikasi Batch: {{ nama_file if nama_file else "Dataset" }} - Sentiment Classifier</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #eef2f5;
+        padding-top: 70px;
+      }
+      .navbar {
+        background-color: #0d6efd !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: 1030;
+      }
+      .navbar .navbar-brand,
+      .navbar .navbar-nav .nav-link {
+        color: white !important;
+      }
+      .navbar .navbar-brand {
+        font-size: 1.5rem;
+        font-weight: 500;
+      }
+      .navbar .navbar-nav .nav-link {
+        font-size: 1.05rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0.375rem;
+        transition: background-color 0.2s ease-in-out;
+      }
+      .navbar .navbar-nav .nav-link:hover,
+      .navbar .navbar-nav .nav-link.active {
+        background-color: #0b5ed7;
+      }
+      .navbar-toggler {
+        border-color: rgba(255, 255, 255, 0.25);
+      }
+      .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+      }
+
+      .content-wrapper {
+        padding-top: 2.5rem;
+        padding-bottom: 2.5rem;
+      }
+      .page-header-section {
+        background-color: #0d6efd; /* Warna biru primer Bootstrap */
+        color: white;
+        padding: 2.5rem 1.5rem;
+        margin-bottom: 2.5rem;
+        border-radius: 0.75rem;
+        text-align: center;
+      }
+      .page-header-section h1 {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+      .page-header-section p {
+        font-size: 1.15rem;
+        opacity: 0.9;
+      }
+
+      .card {
+        border: 1px solid #dee2e6;
+        border-radius: 0.75rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.075);
+        margin-bottom: 2rem;
+      }
+      .card-header {
+        background-color: #6c757d; /* Abu-abu sekunder Bootstrap */
+        color: white;
+        font-weight: 500;
+        font-size: 1.15rem;
+        border-top-left-radius: 0.75rem;
+        border-top-right-radius: 0.75rem;
+        padding: 1rem 1.5rem;
+      }
+      .card-body {
+        padding: 1.75rem;
+      }
+      .summary-card .list-group-item {
+        background-color: transparent;
+        border-left: 0;
+        border-right: 0;
+        padding-left: 0;
+        padding-right: 0;
+      }
+      .summary-card .list-group-item:first-child {
+        border-top: 0;
+      }
+      .summary-card .list-group-item:last-child {
+        border-bottom: 0;
+      }
+      .summary-card h5 {
+        color: #0d6efd;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+      .btn-success {
+        background-color: #198754;
+        border-color: #198754;
+        padding: 0.75rem 1.5rem;
+        font-size: 1.1rem;
+      }
+      .btn-success:hover {
+        background-color: #157347;
+        border-color: #146c43;
+      }
+      .table-responsive {
+        max-height: 70vh;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+      }
+      .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+      } /* Pastikan tinggi cukup */
+      .badge.bg-primary {
+        background-color: #0d6efd !important;
+      }
+      .badge.bg-success {
+        background-color: #198754 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('home') }}"><i class="bi bi-chat-left-quote-fill"></i> Sentiment Classifier</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Klasifikasi Tunggal</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'klasifikasi_batch_route' %}active{% endif %}" href="{{ url_for('klasifikasi_batch_route') }}">Klasifikasi Batch</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'model_comparison_view' %}active{% endif %}" href="{{ url_for('model_comparison_view') }}">Perbandingan Model</a>
+            </li>
+            {% if current_user.is_authenticated %}
+            <li class="nav-item"><a class="nav-link {% if request.endpoint == 'dashboard_route' %}active{% endif %}" href="{{ url_for('dashboard_route') }}">Dashboard Saya</a></li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'classification_history_view' %}active{% endif %}" href="{{ url_for('classification_history_view') }}">Riwayat Saya</a>
+            </li>
+            {% endif %}
+          </ul>
+          <ul class="navbar-nav ms-auto">
+            {% if current_user.is_authenticated %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownUser" role="button" data-bs-toggle="dropdown" aria-expanded="false"> <i class="bi bi-person-circle"></i> {{ current_user.username }} </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownUser">
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('dashboard_route') }}"><i class="bi bi-layout-wtf"></i> Dashboard</a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('logout_route') }}"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                </li>
+              </ul>
+            </li>
+            {% else %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'register_route' %}active{% endif %}" href="{{ url_for('register_route') }}"><i class="bi bi-person-plus-fill"></i> Daftar</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'login_route' %}active{% endif %}" href="{{ url_for('login_route') }}"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid content-wrapper">
+      <div class="container">
+        <div class="page-header-section shadow-sm">
+          <h1 class="display-5"><i class="bi bi-check2-circle"></i> Hasil Klasifikasi Batch</h1>
+          <p>File: <strong>{{ nama_file if nama_file else 'Dataset Anda' }}</strong> | Total Teks Diproses: <strong>{{ total_teks if total_teks is not none else '0' }}</strong></p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+        <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %} {% endif %} {% endwith %}
+
+        <div class="card summary-card shadow-sm mb-4">
+          <div class="card-header bg-dark text-white"><i class="bi bi-pie-chart-fill"></i> Ringkasan Prediksi Sentimen</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-4 mb-md-0">
+                <h5 class="text-center"><i class="bi bi-robot text-primary"></i> Naive Bayes</h5>
+                {% if summary_nb %}
+                <div class="chart-container"><canvas id="nbChart"></canvas></div>
+                <ul class="list-group list-group-flush mt-3">
+                  {% for label, count in summary_nb.items() %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ label | title }}
+                    <span class="badge bg-primary rounded-pill fs-6">{{ count }}</span>
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted text-center">Tidak ada prediksi Naive Bayes.</p>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <h5 class="text-center"><i class="bi bi-graph-up text-success"></i> Logistic Regression</h5>
+                {% if summary_lr %}
+                <div class="chart-container"><canvas id="lrChart"></canvas></div>
+                <ul class="list-group list-group-flush mt-3">
+                  {% for label, count in summary_lr.items() %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ label | title }}
+                    <span class="badge bg-success rounded-pill fs-6">{{ count }}</span>
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted text-center">Tidak ada prediksi Logistic Regression.</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center my-4">
+          <a href="{{ url_for('unduh_hasil_batch_route') }}" class="btn btn-success btn-lg px-5 shadow-sm"> <i class="bi bi-cloud-download-fill"></i> Unduh Hasil Lengkap (CSV) </a>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-header bg-secondary text-white"><i class="bi bi-table"></i> Pratinjau Detail Hasil (Maks. 20 Baris Pertama)</div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              {% if table_preview_html %} {{ table_preview_html | safe }} {% else %}
+              <p class="text-center text-muted p-4">Tidak ada data hasil untuk ditampilkan dalam pratinjau.</p>
+              {% endif %}
+            </div>
+          </div>
+          {% if table_preview_html and total_teks and total_teks > 20 %}
+          <div class="card-footer text-center text-muted">
+            <small>Menampilkan 20 baris pertama dari {{total_teks}} total hasil. Silakan unduh file CSV untuk melihat semua data.</small>
+          </div>
+          {% endif %}
+        </div>
+        <div class="text-center mt-4">
+          <a href="{{ url_for('klasifikasi_batch_route') }}" class="btn btn-outline-primary"> <i class="bi bi-arrow-left-circle"></i> Unggah File Lain </a>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+          function createPieChart(canvasId, chartData, chartLabel, backgroundColors, borderColors) {
+              const labels = Object.keys(chartData).map(label => label.charAt(0).toUpperCase() + label.slice(1));
+              const counts = Object.values(chartData);
+              const ctx = document.getElementById(canvasId);
+
+              if (ctx && labels.length > 0) {
+                  new Chart(ctx, {
+                      type: 'pie',
+                      data: {
+                          labels: labels,
+                          datasets: [{
+                              label: chartLabel,
+                              data: counts,
+                              backgroundColor: backgroundColors,
+                              borderColor: borderColors,
+                              borderWidth: 1
+                          }]
+                      },
+                      options: {
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                              legend: {
+                                  position: 'bottom', // Pindahkan legenda ke bawah
+                                  labels: {
+                                      padding: 15,
+                                      font: { size: 14 }
+                                  }
+                              },
+                              title: { display: false }
+                          }
+                      }
+                  });
+              } else if (ctx) {
+                   ctx.getContext('2d').fillText("Tidak ada data untuk chart.", ctx.width/2 - 40, ctx.height/2);
+              }
+          }
+
+          // Data untuk chart
+          const summaryNbData = {{ summary_nb | tojson | safe }};
+          const summaryLrData = {{ summary_lr | tojson | safe }};
+
+          // Warna konsisten
+          const colors = [
+              'rgba(54, 162, 235, 0.8)', // Biru (Positif)
+              'rgba(255, 99, 132, 0.8)', // Merah (Negatif)
+              'rgba(255, 206, 86, 0.8)', // Kuning (Netral)
+              'rgba(75, 192, 192, 0.8)',
+              'rgba(153, 102, 255, 0.8)'
+          ];
+          const borderColors = colors.map(color => color.replace('0.8', '1'));
+
+          createPieChart('nbChart', summaryNbData, 'Naive Bayes Predictions', colors, borderColors);
+          createPieChart('lrChart', summaryLrData, 'Logistic Regression Predictions', colors.slice().reverse(), borderColors.slice().reverse()); // Balik urutan warna untuk LR agar beda
+      });
+    </script>
+  </body>
+</html>

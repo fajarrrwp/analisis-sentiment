@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WordCloud Sentimen</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="container mt-5">
+      <h1 class="text-center">WordCloud Sentimen</h1>
+
+      <div class="row mt-4">
+        <div class="col-md-4">
+          <h3>Positif</h3>
+          <img src="data:image/png;base64,{{ positive_img }}" class="img-fluid" />
+        </div>
+        <div class="col-md-4">
+          <h3>Negatif</h3>
+          <img src="data:image/png;base64,{{ negative_img }}" class="img-fluid" />
+        </div>
+        <div class="col-md-4">
+          <h3>Netral</h3>
+          <img src="data:image/png;base64,{{ neutral_img }}" class="img-fluid" />
+        </div>
+      </div>
+
+      <!-- Tombol Kembali -->
+      <div class="mt-4 text-center">
+        <a href="/" class="btn btn-outline-primary">Kembali ke Halaman Utama</a>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

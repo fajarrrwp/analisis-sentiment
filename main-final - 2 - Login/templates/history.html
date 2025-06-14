@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title if title else "Riwayat Klasifikasi" }} - Sentiment Classifier</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #eef2f5; padding-top: 70px; }
+      .navbar { background-color: #0d6efd !important; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: fixed; top: 0; width: 100%; z-index: 1030;}
+      .navbar .navbar-brand, .navbar .navbar-nav .nav-link { color: white !important; }
+      .navbar .navbar-brand { font-size: 1.5rem; font-weight: 500; }
+      .navbar .navbar-nav .nav-link { font-size: 1.05rem; padding: 0.75rem 1rem; border-radius: 0.375rem; transition: background-color 0.2s ease-in-out; }
+      .navbar .navbar-nav .nav-link:hover, .navbar .navbar-nav .nav-link.active { background-color: #0b5ed7; }
+      .navbar-toggler { border-color: rgba(255,255,255,0.25); }
+      .navbar-toggler-icon { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");}
+      .content-wrapper { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+      .page-title-section { margin-bottom: 2.5rem; padding: 2rem; background-color: #6c757d; color: white; border-radius: 0.75rem; text-align:center; }
+      .page-title-section h1 { margin-bottom: 0.5rem; font-weight: bold;}
+      .page-title-section p { font-size: 1.1rem; opacity: 0.9; }
+
+      .filter-card { background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 0.75rem; box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,0.05); margin-bottom: 2rem; }
+      .filter-card .card-header { background-color: #f8f9fa; color: #212529; font-weight: 500; font-size:1.1rem; border-bottom: 1px solid #dee2e6; }
+      .filter-card .card-body { padding: 1.5rem; }
+      .form-label { font-size: 0.9rem; font-weight: 500; }
+
+      .history-card { margin-bottom: 1.5rem; border: 1px solid #e0e0e0; border-radius: 0.75rem; box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,0.075); overflow: hidden; }
+      .history-card .card-header { background-color: #f8f9fa; color: #495057; font-weight: 500; border-bottom: 1px solid #e0e0e0; padding: 0.75rem 1.25rem; font-size: 0.95rem;}
+      .history-card .card-body { padding: 1.25rem; }
+      .history-card .input-text { font-style: italic; color: #343a40; background-color: #f8f9fa; padding: 0.75rem; border-radius: 0.375rem; border-left: 4px solid #0d6efd; margin-bottom: 1rem; word-break: break-word; font-size: 0.95rem;}
+      .prediction-section { margin-top: 0.75rem; }
+      .prediction-section h6 { font-size: 1rem; font-weight: 600; color: #212529; margin-bottom:0.25rem; }
+      .sentiment-icon { font-size: 1.1rem; vertical-align: middle; margin-left: 0.25rem; }
+      .text-positif { color: #198754 !important; font-weight:500; }
+      .text-negatif { color: #dc3545 !important; font-weight:500; }
+      .text-netral { color: #6c757d !important; font-weight:500; }
+      .accuracy-score { font-size: 0.8rem; color: #fff; background-color: #28a745; padding: 0.2rem 0.4rem; border-radius: 0.25rem; display: inline-block; margin-left: 5px;}
+      .probability-badge-history { font-size: 0.8rem; background-color: #cfe2ff; color: #084298; padding: 0.2rem 0.4rem; border-radius: 0.25rem; display: inline-block; margin-left: 5px;}
+      .actual-label-history { font-size: 0.8rem; color: #fff; background-color: #0d6efd; padding: 0.2rem 0.4rem; border-radius: 0.25rem; display: inline-block;}
+      .no-history { text-align: center; padding: 3rem; background-color: #fff; border-radius: 0.75rem; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.08); }
+      .no-history i { font-size: 3rem; }
+      .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; }
+      .pagination .page-link { color: #0d6efd; } .pagination .page-link:hover { color: #0b5ed7; }
+      .btn-outline-primary {border-color: #0d6efd; color: #0d6efd; }
+      .btn-outline-primary:hover { background-color: #0d6efd; color:white; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('home') }}"><i class="bi bi-chat-left-quote-fill"></i> Sentiment Classifier</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Klasifikasi Tunggal</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'klasifikasi_batch_route' %}active{% endif %}" href="{{ url_for('klasifikasi_batch_route') }}">Klasifikasi Batch</a>
+            </li>
+            <li class="nav-item"> 
+              <a class="nav-link {% if request.endpoint == 'model_comparison_view' %}active{% endif %}" href="{{ url_for('model_comparison_view') }}">Perbandingan Model</a>
+            </li>
+            {% if current_user.is_authenticated %} 
+            <li class="nav-item"> 
+              <a class="nav-link {% if request.endpoint == 'dashboard_route' %}active{% endif %}" href="{{ url_for('dashboard_route') }}">Dashboard Saya</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'classification_history_view' %}active{% endif %}" aria-current="page" href="{{ url_for('classification_history_view') }}">Riwayat Saya</a>
+            </li>
+            {% endif %}
+          </ul>
+          <ul class="navbar-nav ms-auto"> 
+            {% if current_user.is_authenticated %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownUser" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-person-circle"></i> {{ current_user.username }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownUser">
+                  <li><a class="dropdown-item" href="{{ url_for('dashboard_route') }}"><i class="bi bi-layout-wtf"></i> Dashboard</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="{{ url_for('logout_route') }}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                </ul>
+              </li>
+            {% else %}
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'register_route' %}active{% endif %}" href="{{ url_for('register_route') }}"><i class="bi bi-person-plus-fill"></i> Daftar</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'login_route' %}active{% endif %}" href="{{ url_for('login_route') }}"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container content-wrapper">
+        <div class="page-title-section">
+            <h1 class="display-5"><i class="bi bi-journals"></i> {{ title if title else "Riwayat Klasifikasi" }}</h1>
+            {% if current_user.is_authenticated %}
+            <p>Telusuri dan filter riwayat analisis sentimen yang telah Anda lakukan.</p>
+            {% endif %}
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card filter-card shadow-sm">
+            <div class="card-header">
+                <i class="bi bi-funnel-fill"></i> Filter Riwayat
+            </div>
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('classification_history_view') }}">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label for="search_query" class="form-label">Cari Teks Input:</label>
+                            <input type="text" class="form-control form-control-sm" id="search_query" name="search_query" value="{{ active_filters.search_query if active_filters else '' }}" placeholder="Masukkan kata kunci...">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="sentiment_filter" class="form-label">Filter Sentimen (NB):</label>
+                            <select class="form-select form-select-sm" id="sentiment_filter" name="sentiment_filter">
+                                {% for sentiment in sentiment_options %}
+                                <option value="{{ sentiment|lower }}" {% if active_filters and active_filters.sentiment_filter == sentiment|lower %}selected{% endif %}>
+                                    {{ sentiment | title }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="start_date" class="form-label">Dari Tanggal:</label>
+                            <input type="date" class="form-control form-control-sm" id="start_date" name="start_date" value="{{ active_filters.start_date if active_filters else '' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="end_date" class="form-label">Sampai Tanggal:</label>
+                            <input type="date" class="form-control form-control-sm" id="end_date" name="end_date" value="{{ active_filters.end_date if active_filters else '' }}">
+                        </div>
+                        <div class="col-md-1 d-grid">
+                            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+                        </div>
+                         <div class="col-md-12 text-md-end mt-2 mt-md-0">
+                            <a href="{{ url_for('classification_history_view') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-clockwise"></i> Reset Filter</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% if history_page_data and history_page_data.items %}
+            {% for item in history_page_data.items %}
+            <div class="card history-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-clock-fill"></i> {{ item.timestamp.strftime('%d %b %Y, %H:%M:%S') if item.timestamp else 'N/A' }} <span class="badge bg-light text-dark">UTC</span></span>
+                    <span class="actual-label-history">Aktual (saat itu): {{ item.actual_label_retrieved }}</span>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong><i class="bi bi-chat-left-text-fill"></i> Teks Input:</strong></p>
+                    <p class="input-text">"{{ item.input_text }}"</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6 prediction-section mb-3 mb-md-0">
+                            <h6><i class="bi bi-robot text-primary"></i> Naive Bayes</h6>
+                            {% set nb_color = 'text-dark' %}{% set nb_icon_class = 'bi-emoji-expressionless-fill text-secondary' %}
+                            {% if item.naive_bayes_label == 'positif' %}{% set nb_color = 'text-positif' %}{% set nb_icon_class = 'bi-emoji-smile-fill text-success' %}
+                            {% elif item.naive_bayes_label == 'negatif' %}{% set nb_color = 'text-negatif' %}{% set nb_icon_class = 'bi-emoji-frown-fill text-danger' %}
+                            {% elif item.naive_bayes_label == 'netral' %}{% set nb_color = 'text-netral' %}{% set nb_icon_class = 'bi-emoji-neutral-fill text-secondary' %}
+                            {% endif %}
+                            <i class="bi {{ nb_icon_class.split(' ')[0] }} {{ nb_color }}" style="font-size: 1.5rem;"></i>
+                            <span class="{{ nb_color }} fs-5">{{ item.naive_bayes_label | title }}</span><br>
+                            <small>Keyakinan: <span class="probability-badge-history">{{ item.naive_bayes_probability }}</span></small>
+                            <small>Acc. Sesaat: <span class="accuracy-score">{{ item.naive_bayes_accuracy }}</span></small>
+                        </div>
+                        <div class="col-md-6 prediction-section">
+                            <h6><i class="bi bi-graph-up text-success"></i> Logistic Regression</h6>
+                            {% set lr_color = 'text-dark' %}{% set lr_icon_class = 'bi-emoji-expressionless-fill text-secondary' %}
+                            {% if item.logistic_regression_label == 'positif' %}{% set lr_color = 'text-positif' %}{% set lr_icon_class = 'bi-emoji-smile-fill text-success' %}
+                            {% elif item.logistic_regression_label == 'negatif' %}{% set lr_color = 'text-negatif' %}{% set lr_icon_class = 'bi-emoji-frown-fill text-danger' %}
+                            {% elif item.logistic_regression_label == 'netral' %}{% set lr_color = 'text-netral' %}{% set lr_icon_class = 'bi-emoji-neutral-fill text-secondary' %}
+                            {% endif %}
+                             <i class="bi {{ lr_icon_class.split(' ')[0] }} {{ lr_color }}" style="font-size: 1.5rem;"></i>
+                            <span class="{{ lr_color }} fs-5">{{ item.logistic_regression_label | title }}</span><br>
+                            <small>Keyakinan: <span class="probability-badge-history">{{ item.logistic_regression_probability }}</span></small>
+                            <small>Acc. Sesaat: <span class="accuracy-score">{{ item.logistic_regression_accuracy }}</span></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if history_page_data.pages > 1 %}
+            <nav aria-label="Navigasi Riwayat" class="mt-4 d-flex justify-content-center">
+              <ul class="pagination shadow-sm">
+                <li class="page-item {% if not history_page_data.has_prev %}disabled{% endif %}">
+                  <a class="page-link" href="{{ url_for('classification_history_view', page=history_page_data.prev_num, search_query=active_filters.search_query, sentiment_filter=active_filters.sentiment_filter, start_date=active_filters.start_date, end_date=active_filters.end_date) if history_page_data.has_prev else '#' }}"><i class="bi bi-chevron-left"></i></a>
+                </li>
+                {% for page_num in history_page_data.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                  {% if page_num %}
+                    {% if history_page_data.page == page_num %}
+                      <li class="page-item active" aria-current="page"><span class="page-link">{{ page_num }}</span></li>
+                    {% else %}
+                      <li class="page-item"><a class="page-link" href="{{ url_for('classification_history_view', page=page_num, search_query=active_filters.search_query, sentiment_filter=active_filters.sentiment_filter, start_date=active_filters.start_date, end_date=active_filters.end_date) }}">{{ page_num }}</a></li>
+                    {% endif %}
+                  {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                  {% endif %}
+                {% endfor %}
+                <li class="page-item {% if not history_page_data.has_next %}disabled{% endif %}">
+                  <a class="page-link" href="{{ url_for('classification_history_view', page=history_page_data.next_num, search_query=active_filters.search_query, sentiment_filter=active_filters.sentiment_filter, start_date=active_filters.start_date, end_date=active_filters.end_date) if history_page_data.has_next else '#' }}"><i class="bi bi-chevron-right"></i></a>
+                </li>
+              </ul>
+            </nav>
+            {% endif %}
+
+        {% else %}
+            <div class="no-history card shadow">
+                <div class="card-body text-center">
+                    <i class="bi bi-emoji-frown-fill fs-1 text-secondary mb-3"></i>
+                    <h3 class="card-title">Riwayat Tidak Ditemukan</h3>
+                    <p class="text-muted">Tidak ada riwayat klasifikasi yang cocok dengan filter Anda, atau Anda belum memiliki riwayat.</p>
+                    <a href="{{ url_for('classification_history_view') }}" class="btn btn-outline-primary mt-2"><i class="bi bi-arrow-clockwise"></i> Reset Filter & Tampilkan Semua Riwayat</a> <br>
+                    <a href="{{ url_for('home') }}" class="btn btn-link mt-3">
+                        <i class="bi bi-pencil-square"></i> Mulai Analisis Teks Baru
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="text-center mt-5 mb-4">
+            <a href="{{ url_for('home') }}" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-house-door-fill"></i> Kembali ke Halaman Utama
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

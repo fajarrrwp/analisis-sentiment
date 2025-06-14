@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sentiment Classifier - Analisis Teks</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #eef2f5; padding-top: 70px; }
+      .navbar { background-color: #0d6efd !important; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: fixed; top: 0; width: 100%; z-index: 1030;}
+      .navbar .navbar-brand,
+      .navbar .navbar-nav .nav-link { color: white !important; }
+      .navbar .navbar-brand { font-size: 1.5rem; font-weight: 500; }
+      .navbar .navbar-nav .nav-link { font-size: 1.05rem; padding: 0.75rem 1rem; border-radius: 0.375rem; transition: background-color 0.2s ease-in-out; }
+      .navbar .navbar-nav .nav-link:hover,
+      .navbar .navbar-nav .nav-link.active { background-color: #0b5ed7; }
+      .navbar-toggler { border-color: rgba(255,255,255,0.25); }
+      .navbar-toggler-icon { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");}
+      
+      .content-wrapper { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+      .card { border: 1px solid #dee2e6; border-radius: 0.75rem; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1); margin-bottom: 2rem; }
+      .card-header { background-color: #0d6efd; color: white; font-weight: 500; font-size: 1.2rem; border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem; padding: 1rem 1.5rem;}
+      .card-body { padding: 1.75rem; }
+      .form-label { font-weight: 500; color: #495057; }
+      .btn-primary { background-color: #0d6efd; border-color: #0d6efd; padding: 0.6rem 1.5rem; font-size: 1.05rem; border-radius: 0.375rem; }
+      .btn-primary:hover { background-color: #0b5ed7; border-color: #0a58ca;}
+      .btn-outline-success { border-color: #198754; color: #198754; } .btn-outline-success:hover { background-color: #198754; color: white; }
+      .btn-outline-danger { border-color: #dc3545; color: #dc3545; } .btn-outline-danger:hover { background-color: #dc3545; color: white; }
+      .btn-outline-secondary { border-color: #6c757d; color: #6c757d; } .btn-outline-secondary:hover { background-color: #6c757d; color: white; }
+      
+      .result-card .card-header { background-color: #6f42c1; } 
+      .result-text { font-size: 1.1rem; margin-bottom: 0.5rem; }
+      .sentiment-icon { font-size: 1.4rem; vertical-align: text-bottom; margin-left: 0.5rem; }
+      .text-positif { color: #198754 !important; font-weight: bold; }
+      .text-negatif { color: #dc3545 !important; font-weight: bold; }
+      .text-netral { color: #6c757d !important; font-weight: bold; }
+      .accuracy-score { font-size: 0.85rem; color: #000; background-color: #cfe2ff; padding: 0.25rem 0.5rem; border-radius: 0.25rem; }
+      .actual-label { font-size: 0.85rem; color: #000; background-color: #e2e3e5; padding: 0.25rem 0.5rem; border-radius: 0.25rem;}
+      .probability-badge { font-size: 0.85rem; font-weight: 500; }
+
+      .history-card .card-header { background-color: #fd7e14; } 
+      .history-item { background-color: #ffffff; border: 1px solid #e0e0e0; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
+      .history-item p { margin-bottom: 0.3rem; font-size: 0.95rem; }
+      .quick-text-btn { margin-right: 0.5rem; margin-bottom: 0.5rem;} 
+      .blockquote { border-left: 0.25rem solid #0d6efd; padding-left: 1rem; background-color: #f8f9fa; }
+      .word-importance span.badge { font-size: 0.85em; padding: 0.4em 0.6em;}
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('home') }}"><i class="bi bi-chat-left-quote-fill"></i> Sentiment Classifier</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Klasifikasi Tunggal</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'klasifikasi_batch_route' %}active{% endif %}" href="{{ url_for('klasifikasi_batch_route') }}">Klasifikasi Batch</a>
+            </li>
+            <li class="nav-item"> 
+              <a class="nav-link {% if request.endpoint == 'model_comparison_view' %}active{% endif %}" href="{{ url_for('model_comparison_view') }}">Perbandingan Model</a>
+            </li>
+            {% if current_user.is_authenticated %} 
+            <li class="nav-item"> <a class="nav-link {% if request.endpoint == 'dashboard_route' %}active{% endif %}" href="{{ url_for('dashboard_route') }}">Dashboard Saya</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'classification_history_view' %}active{% endif %}" href="{{ url_for('classification_history_view') }}">Riwayat Saya</a>
+            </li>
+            {% endif %}
+          </ul>
+          <ul class="navbar-nav ms-auto"> 
+            {% if current_user.is_authenticated %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownUser" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-person-circle"></i> {{ current_user.username }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownUser">
+                  <li><a class="dropdown-item" href="{{ url_for('dashboard_route') }}"><i class="bi bi-layout-wtf"></i> Dashboard</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="{{ url_for('logout_route') }}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                </ul>
+              </li>
+            {% else %}
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'register_route' %}active{% endif %}" href="{{ url_for('register_route') }}"><i class="bi bi-person-plus-fill"></i> Daftar</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'login_route' %}active{% endif %}" href="{{ url_for('login_route') }}"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container content-wrapper">
+        <div class="text-center mb-5">
+            <h1 class="display-5 fw-bold"><i class="bi bi-emoji-sunglasses-fill text-warning"></i> Analisis Sentimen Teks</h1>
+            <p class="lead text-muted">Temukan nuansa emosi dalam teks Anda dengan cepat dan akurat!</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if error %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Error:</strong> {{ error }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
+        <div class="card shadow-lg"> 
+            <div class="card-header">
+                <i class="bi bi-keyboard"></i> Masukkan Teks Anda
+            </div>
+            <div class="card-body">
+                
+                <div class="mb-4 p-3 bg-light border rounded">
+                    <h6 class="mb-2 text-dark"><i class="bi bi-shuffle"></i> Coba dengan Contoh Cepat dari Dataset:</h6>
+                    {% if quick_examples %}
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for example in quick_examples %}
+                                {% set btn_class = 'btn-outline-secondary' %}
+                                {% set icon_class = 'bi-chat-dots' %}
+                                {% if example.label == 'positif' %}{% set btn_class = 'btn-outline-success' %}{% set icon_class = 'bi-hand-thumbs-up' %}
+                                {% elif example.label == 'negatif' %}{% set btn_class = 'btn-outline-danger' %}{% set icon_class = 'bi-hand-thumbs-down' %}
+                                {% endif %}
+                                <button type="button" 
+                                        class="btn {{ btn_class }} btn-sm quick-text-btn" 
+                                        title="Sentimen aktual dari dataset: {{ example.label | title }}" 
+                                        data-fulltext="{{ example.text }}">
+                                    <i class="bi {{ icon_class }}"></i> {{ example.text | truncate(40) }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0"><small>Tidak ada contoh cepat dari dataset. Coba masukkan teks Anda sendiri.</small></p>
+                    {% endif %}
+                </div>
+                <hr class="mb-4"> 
+                
+                <form method="POST" action="{{ url_for('classify_text_input_route') }}">
+                    <div class="mb-3">
+                      <label for="text_input_id" class="form-label"><strong>Teks untuk Dianalisis:</strong></label>
+                      <textarea class="form-control form-control-lg" id="text_input_id" name="text_input" rows="4" required placeholder="Contoh: Kualitas produk ini sangat mengesankan dan melebihi ekspektasi saya!">{{ last_input_text if last_input_text else '' }}</textarea>
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-search"></i> Analisis Sekarang
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if last_input_text %}
+        <div class="card result-card mt-4 shadow">
+            <div class="card-header">
+                <i class="bi bi-bar-chart-fill"></i> Hasil Analisis Sentimen
+            </div>
+            <div class="card-body">
+                <h5 class="mb-3">Teks Input:</h5>
+                <blockquote class="blockquote bg-light p-3 rounded">
+                    <p class="mb-0 fst-italic">"{{ last_input_text }}"</p>
+                </blockquote>
+                
+                <p class="mt-3"><strong>Label Aktual (dari dataset):</strong> <span class="badge bg-secondary actual-label">{{ actual_label_for_display if actual_label_for_display else 'N/A' }}</span></p>
+                <hr />
+                
+                <div class="row mt-3 text-center">
+                    <div class="col-md-6 mb-4 mb-md-0">
+                        <div class="p-3 border rounded bg-white shadow-sm h-100">
+                            <h5><i class="bi bi-brain"></i> Naive Bayes</h5>
+                            {% set nb_color = 'text-dark' %}{% set nb_icon_class = 'bi-emoji-expressionless-fill text-secondary' %}
+                            {% if nb_result == 'positif' %}{% set nb_color = 'text-positif' %}{% set nb_icon_class = 'bi-emoji-smile-fill text-success' %}
+                            {% elif nb_result == 'negatif' %}{% set nb_color = 'text-negatif' %}{% set nb_icon_class = 'bi-emoji-frown-fill text-danger' %}
+                            {% elif nb_result == 'netral' %}{% set nb_color = 'text-netral' %}{% set nb_icon_class = 'bi-emoji-neutral-fill text-secondary' %}
+                            {% endif %}
+                            <p class="display-4 {{ nb_color }}"><i class="bi {{ nb_icon_class.split(' ')[0] }}"></i></p>
+                            <p class="result-text fs-5 {{ nb_color }}">{{ nb_result | title }}</p>
+                            <p>Keyakinan: <span class="badge bg-primary probability-badge">{{ nb_probability }}</span></p>
+                            <p>Akurasi Sesaat: <span class="accuracy-score">{{ nb_accuracy_str }}</span></p>
+                            {% if nb_all_probs %}
+                            <small class="text-muted d-block mt-2">Distribusi Probabilitas:
+                                {% for class_label, prob_val in nb_all_probs.items() %}
+                                    {{ class_label | title }}: {{ "%.0f"|format(prob_val*100) }}%{% if not loop.last %}; {% endif %}
+                                {% endfor %}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                         <div class="p-3 border rounded bg-white shadow-sm h-100">
+                            <h5><i class="bi bi-sliders"></i> Logistic Regression</h5>
+                            {% set lr_color = 'text-dark' %}{% set lr_icon_class = 'bi-emoji-expressionless-fill text-secondary' %}
+                            {% if lr_result == 'positif' %}{% set lr_color = 'text-positif' %}{% set lr_icon_class = 'bi-emoji-smile-fill text-success' %}
+                            {% elif lr_result == 'negatif' %}{% set lr_color = 'text-negatif' %}{% set lr_icon_class = 'bi-emoji-frown-fill text-danger' %}
+                            {% elif lr_result == 'netral' %}{% set lr_color = 'text-netral' %}{% set lr_icon_class = 'bi-emoji-neutral-fill text-secondary' %}
+                            {% endif %}
+                            <p class="display-4 {{ lr_color }}"><i class="bi {{ lr_icon_class.split(' ')[0] }}"></i></p>
+                            <p class="result-text fs-5 {{ lr_color }}">{{ lr_result | title }}</p>
+                            <p>Keyakinan: <span class="badge bg-primary probability-badge">{{ lr_probability }}</span></p>
+                            <p>Akurasi Sesaat: <span class="accuracy-score">{{ lr_accuracy_str }}</span></p>
+                            
+                            {% if lr_positive_influencers or lr_negative_influencers %}
+                            <div class="mt-3 text-start word-importance"> {# text-start agar badge tidak center #}
+                                <small class="text-muted d-block mb-1"><strong>Kata berpengaruh (Logistic Regression):</strong></small>
+                                {% if lr_positive_influencers %}
+                                    <div class="mb-1">
+                                    <strong class="text-success small"><i class="bi bi-arrow-up-circle-fill"></i> Pendorong ke "{{lr_result | title}}":</strong><br>
+                                    {% for item in lr_positive_influencers %}
+                                        <span class="badge bg-light text-success border border-success me-1 mt-1" title="Kontribusi: {{ "%.2f"|format(item.importance) }}">{{ item.word }}</span>
+                                    {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if lr_negative_influencers %}
+                                    <div>
+                                    <strong class="text-danger small"><i class="bi bi-arrow-down-circle-fill"></i> Penekan / Pendorong ke kelas lain:</strong><br>
+                                    {% for item in lr_negative_influencers %}
+                                        <span class="badge bg-light text-danger border border-danger me-1 mt-1" title="Kontribusi: {{ "%.2f"|format(item.importance) }}">{{ item.word }}</span>
+                                    {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% if lr_all_probs %}
+                            <small class="text-muted d-block mt-2">Distribusi Probabilitas:
+                                {% for class_label, prob_val in lr_all_probs.items() %}
+                                    {{ class_label | title }}: {{ "%.0f"|format(prob_val*100) }}%{% if not loop.last %}; {% endif %}
+                                {% endfor %}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %} 
+        
+        {% if history and not last_input_text and (current_user.is_authenticated or history|length > 0) %} 
+        <div class="card history-card mt-4 shadow">
+            <div class="card-header">
+                <i class="bi bi-clock-history"></i> 
+                {% if current_user.is_authenticated %}
+                    Riwayat Klasifikasi Terakhir Anda (Maks. 3):
+                {% else %}
+                    Riwayat Sesi Ini (Maks. 3):
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if history %}
+                    {% for item in history %} 
+                    <div class="history-item">
+                        <div class="d-flex justify-content-between">
+                            <p class="mb-1"><strong>Input:</strong> <em class="text-muted">"{{ item.input_text | truncate(60) }}"</em></p>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar3"></i> 
+                                {% if item.timestamp %}
+                                    {% if current_user.is_authenticated %} 
+                                        {{ item.timestamp.strftime('%d %b %Y, %H:%M') }} UTC
+                                    {% else %} 
+                                        {{ item.timestamp.split(' ')[0] }} 
+                                    {% endif %}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-6">
+                                <small>NB: <strong class="{% if item.naive_bayes_label == 'positif' %}text-positif{% elif item.naive_bayes_label == 'negatif' %}text-negatif{% else %}text-netral{% endif %}">{{ item.naive_bayes_label | title }}</strong> 
+                                {% if item.naive_bayes_probability %}({{ item.naive_bayes_probability }}){% endif %}</small>
+                            </div>
+                            <div class="col-sm-6">
+                                <small>LR: <strong class="{% if item.logistic_regression_label == 'positif' %}text-positif{% elif item.logistic_regression_label == 'negatif' %}text-negatif{% else %}text-netral{% endif %}">{{ item.logistic_regression_label | title }}</strong>
+                                {% if item.logistic_regression_probability %}({{ item.logistic_regression_probability }}){% endif %}</small>
+                            </div>
+                        </div>
+                        {% if item.actual_label_retrieved and item.actual_label_retrieved not in ["N/A (Dataframe Error)", "Data tidak ditemukan di CSV"] %}
+                        <p class="mt-1"><small>Label Aktual (saat itu): <span class="badge bg-light text-dark border">{{ item.actual_label_retrieved }}</span></small></p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    
+                    {% if current_user.is_authenticated and history|length > 0 %}
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('classification_history_view') }}" class="btn btn-outline-primary btn-sm">Lihat Semua Riwayat Saya</a>
+                    </div>
+                    {% endif %}
+                {% else %} 
+                    {% if current_user.is_authenticated %}
+                    <p class="text-center text-muted">Belum ada riwayat klasifikasi untuk Anda.</p>
+                    {% else %}
+                     <p class="text-center text-muted">Belum ada riwayat. <a href="{{ url_for('login_route') }}">Login</a> untuk menyimpan riwayat pribadi Anda.</p>
+                    {% endif %}
+                {% endif %} 
+            </div>
+        </div>
+        {% endif %} 
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const quickTextButtons = document.querySelectorAll('.quick-text-btn');
+            const mainTextArea = document.getElementById('text_input_id');
+
+            if (mainTextArea) {
+                quickTextButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const fullText = this.dataset.fulltext;
+                        if (fullText) {
+                            mainTextArea.value = fullText;
+                        } else {
+                            mainTextArea.value = this.textContent || this.innerText; 
+                        }
+                        mainTextArea.focus();
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

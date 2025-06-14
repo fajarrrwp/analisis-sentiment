@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title if title else "Dashboard" }} - Sentiment Classifier</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #eef2f5;
+        padding-top: 70px;
+      }
+      .navbar {
+        background-color: #0d6efd !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: 1030;
+      }
+      .navbar .navbar-brand,
+      .navbar .navbar-nav .nav-link {
+        color: white !important;
+      }
+      .navbar .navbar-brand {
+        font-size: 1.5rem;
+        font-weight: 500;
+      }
+      .navbar .navbar-nav .nav-link {
+        font-size: 1.05rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0.375rem;
+        transition: background-color 0.2s ease-in-out;
+      }
+      .navbar .navbar-nav .nav-link:hover,
+      .navbar .navbar-nav .nav-link.active {
+        background-color: #0b5ed7;
+      }
+      .navbar-toggler {
+        border-color: rgba(255, 255, 255, 0.25);
+      }
+      .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+      }
+
+      .content-wrapper {
+        padding-top: 2.5rem;
+        padding-bottom: 2.5rem;
+      }
+      .page-header-section {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        color: white;
+        padding: 2.5rem 1.5rem;
+        margin-bottom: 2.5rem;
+        border-radius: 0.75rem;
+        text-align: center;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+      }
+      .page-header-section h1 {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+      .page-header-section p {
+        font-size: 1.15rem;
+        opacity: 0.9;
+      }
+
+      .stat-card {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 0.75rem;
+        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1.5rem;
+      }
+      .stat-card .stat-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+      }
+      .stat-card .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #0d6efd;
+      }
+      .stat-card .stat-label {
+        font-size: 0.95rem;
+        color: #6c757d;
+      }
+      .chart-card {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 0.75rem;
+        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.5rem;
+      }
+      .chart-card .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        font-weight: 500;
+        font-size: 1.1rem;
+      }
+      .chart-container {
+        position: relative;
+        height: 320px;
+        width: 100%;
+        padding: 1rem;
+      }
+      .activity-list .list-group-item {
+        border-left: 3px solid #0d6efd;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+      }
+      .activity-list .text-muted {
+        font-size: 0.8rem;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('home') }}"><i class="bi bi-chat-left-quote-fill"></i> Sentiment Classifier</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Klasifikasi Tunggal</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'klasifikasi_batch_route' %}active{% endif %}" href="{{ url_for('klasifikasi_batch_route') }}">Klasifikasi Batch</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'model_comparison_view' %}active{% endif %}" href="{{ url_for('model_comparison_view') }}">Perbandingan Model</a>
+            </li>
+            {% if current_user.is_authenticated %}
+            <li class="nav-item"><a class="nav-link {% if request.endpoint == 'dashboard_route' %}active{% endif %}" href="{{ url_for('dashboard_route') }}">Dashboard Saya</a></li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'classification_history_view' %}active{% endif %}" href="{{ url_for('classification_history_view') }}">Riwayat Saya</a>
+            </li>
+            {% endif %}
+          </ul>
+          <ul class="navbar-nav ms-auto">
+            {% if current_user.is_authenticated %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownUser" role="button" data-bs-toggle="dropdown" aria-expanded="false"> <i class="bi bi-person-circle"></i> {{ current_user.username }} </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownUser">
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('dashboard_route') }}"><i class="bi bi-layout-wtf"></i> Dashboard</a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('logout_route') }}"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                </li>
+              </ul>
+            </li>
+            {% else %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'register_route' %}active{% endif %}" href="{{ url_for('register_route') }}"><i class="bi bi-person-plus-fill"></i> Daftar</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'login_route' %}active{% endif %}" href="{{ url_for('login_route') }}"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container content-wrapper">
+      <div class="page-header-section">
+        <h1 class="display-5"><i class="bi bi-person-badge"></i> Dashboard Pengguna</h1>
+        <p>Selamat datang kembali, <strong>{{ current_user.username }}</strong>! Berikut ringkasan aktivitas Anda.</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+      <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endfor %} {% endif %} {% endwith %}
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="stat-card bg-primary text-white shadow">
+            <div class="stat-icon"><i class="bi bi-card-checklist"></i></div>
+            <div class="stat-number">{{ total_classifications }}</div>
+            <div class="stat-label">Total Klasifikasi Dilakukan</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-4">
+        <div class="col-lg-6">
+          <div class="card chart-card">
+            <div class="card-header"><i class="bi bi-pie-chart-fill text-primary"></i> Distribusi Sentimen (Naive Bayes)</div>
+            <div class="card-body">
+              {% if nb_sentiment_counts %}
+              <div class="chart-container">
+                <canvas id="nbSentimentChart"></canvas>
+              </div>
+              {% else %}
+              <p class="text-center text-muted">Belum ada data prediksi Naive Bayes di riwayat Anda.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card chart-card">
+            <div class="card-header"><i class="bi bi-pie-chart-fill text-success"></i> Distribusi Sentimen (Logistic Regression)</div>
+            <div class="card-body">
+              {% if lr_sentiment_counts %}
+              <div class="chart-container">
+                <canvas id="lrSentimentChart"></canvas>
+              </div>
+              {% else %}
+              <p class="text-center text-muted">Belum ada data prediksi Logistic Regression di riwayat Anda.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-4">
+        <div class="card-header bg-info text-white"><i class="bi bi-clock-history"></i> Aktivitas Klasifikasi Terbaru (Maks. 5)</div>
+        <div class="card-body">
+          {% if recent_activities %}
+          <ul class="list-group list-group-flush activity-list">
+            {% for activity in recent_activities %}
+            <li class="list-group-item">
+              <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1 fst-italic">"{{ activity.input_text | truncate(80) }}"</h6>
+                <small class="text-muted">{{ activity.timestamp.strftime('%d %b %Y, %H:%M') }}</small>
+              </div>
+              <small class="text-muted">
+                NB: <span class="fw-bold text-{{ activity.naive_bayes_label|lower }}">{{ activity.naive_bayes_label|title }}</span> | LR:
+                <span class="fw-bold text-{{ activity.logistic_regression_label|lower }}">{{ activity.logistic_regression_label|title }}</span>
+              </small>
+            </li>
+            {% endfor %}
+          </ul>
+          {% if total_classifications > 5 %}
+          <div class="text-center mt-3">
+            <a href="{{ url_for('classification_history_view') }}" class="btn btn-outline-primary btn-sm">Lihat Semua Riwayat</a>
+          </div>
+          {% endif %} {% else %}
+          <p class="text-center text-muted">Belum ada aktivitas klasifikasi.</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="text-center mt-4 mb-4">
+        <a href="{{ url_for('home') }}" class="btn btn-outline-secondary"> <i class="bi bi-house-door-fill"></i> Kembali ke Halaman Utama </a>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+          function renderPieChart(canvasId, chartData, chartTitle) {
+              const ctx = document.getElementById(canvasId);
+              if (!ctx || !chartData || Object.keys(chartData).length === 0) {
+                  if(ctx) { // Jika canvas ada tapi data tidak ada
+                      const context = ctx.getContext('2d');
+                      context.textAlign = 'center';
+                      context.fillText('Tidak ada data untuk ditampilkan.', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                  }
+                  return;
+              }
+
+              const labels = Object.keys(chartData).map(label => label.charAt(0).toUpperCase() + label.slice(1));
+              const dataCounts = Object.values(chartData);
+
+              const backgroundColors = {
+                  'positif': 'rgba(25, 135, 84, 0.7)', // Success Green
+                  'negatif': 'rgba(220, 53, 69, 0.7)', // Danger Red
+                  'netral': 'rgba(108, 117, 125, 0.7)', // Secondary Gray
+              };
+              const borderColors = {
+                  'positif': 'rgba(25, 135, 84, 1)',
+                  'negatif': 'rgba(220, 53, 69, 1)',
+                  'netral': 'rgba(108, 117, 125, 1)',
+              };
+              const defaultBgColor = 'rgba(13, 110, 253, 0.7)'; // Primary Blue
+              const defaultBorderColor = 'rgba(13, 110, 253, 1)';
+
+
+              new Chart(ctx, {
+                  type: 'pie',
+                  data: {
+                      labels: labels,
+                      datasets: [{
+                          label: chartTitle,
+                          data: dataCounts,
+                          backgroundColor: labels.map(label => backgroundColors[label.toLowerCase()] || defaultBgColor),
+                          borderColor: labels.map(label => borderColors[label.toLowerCase()] || defaultBorderColor),
+                          borderWidth: 1
+                      }]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                          legend: {
+                              position: 'bottom',
+                              labels: { padding: 20, font: {size: 14} }
+                          },
+                          title: { display: true, text: chartTitle, font: {size: 16}, padding: {top:10, bottom:10} }
+                      }
+                  }
+              });
+          }
+
+          const nbData = {{ chart_data_nb | tojson | safe }};
+          renderPieChart('nbSentimentChart', nbData, 'Distribusi Sentimen Naive Bayes');
+
+          const lrData = {{ chart_data_lr | tojson | safe }};
+          renderPieChart('lrSentimentChart', lrData, 'Distribusi Sentimen Logistic Regression');
+      });
+    </script>
+  </body>
+</html>
