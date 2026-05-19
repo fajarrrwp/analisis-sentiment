@@ -1,14 +1,19 @@
 import pandas as pd
 import joblib
 import time
+import os
 from sklearn.model_selection import train_test_split
 import ast
 
-# Konfigurasi (sesuaikan dengan nama file Anda)
-VECTORIZER_PATH = 'vectorizer.pkl'
-NAIVE_BAYES_MODEL_PATH = 'naive_bayes_model.pkl'
-LOGISTIC_REGRESSION_MODEL_PATH = 'logistic_regression_model.pkl'
-DATASET_PATH = 'hasil4.csv'
+# Resolve paths relative to this file so the script can be run from any cwd.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODELS_DIR = os.path.join(BASE_DIR, 'models')
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+
+VECTORIZER_PATH = os.path.join(MODELS_DIR, 'vectorizer.pkl')
+NAIVE_BAYES_MODEL_PATH = os.path.join(MODELS_DIR, 'naive_bayes_model.pkl')
+LOGISTIC_REGRESSION_MODEL_PATH = os.path.join(MODELS_DIR, 'logistic_regression_model.pkl')
+DATASET_PATH = os.path.join(DATA_DIR, 'hasil4.csv')
 
 def preprocess_text_for_testing(series_text):
     def convert_stringified_list_to_text(s):
