@@ -25,13 +25,19 @@ from collections import Counter
 
 # --- Konfigurasi & Konstanta ---
 APP_SECRET_KEY = 'fajar_ganti_ini_dengan_kunci_rahasia_yang_sangat_aman_dan_unik_sekali_lagi!' # SANGAT PENTING: Ganti!
-VECTORIZER_PATH = 'vectorizer.pkl'
-NAIVE_BAYES_MODEL_PATH = 'naive_bayes_model.pkl'
-LOGISTIC_REGRESSION_MODEL_PATH = 'logistic_regression_model.pkl'
-LABEL_ENCODER_PATH = 'text_label_encoder.pkl'
-DATASET_PATH = 'hasil4.csv'
-HISTORY_SESSION_KEY = 'classification_history_anonymous' 
-TEMP_FOLDER = 'temp_files'
+
+# Resolve paths relative to this file so the app can be run from any cwd.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODELS_DIR = os.path.join(BASE_DIR, 'models')
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+
+VECTORIZER_PATH = os.path.join(MODELS_DIR, 'vectorizer.pkl')
+NAIVE_BAYES_MODEL_PATH = os.path.join(MODELS_DIR, 'naive_bayes_model.pkl')
+LOGISTIC_REGRESSION_MODEL_PATH = os.path.join(MODELS_DIR, 'logistic_regression_model.pkl')
+LABEL_ENCODER_PATH = os.path.join(MODELS_DIR, 'text_label_encoder.pkl')
+DATASET_PATH = os.path.join(DATA_DIR, 'hasil4.csv')
+HISTORY_SESSION_KEY = 'classification_history_anonymous'
+TEMP_FOLDER = os.path.join(BASE_DIR, 'temp_files')
 
 # --- Inisialisasi Aplikasi Flask & Ekstensi ---
 app = Flask(__name__)
